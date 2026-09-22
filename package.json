@@ -15,7 +15,10 @@
     "desktop": "electron desktop/main.mjs",
     "desktop:smoke": "electron desktop/main.mjs --smoke-test",
     "package:mac": "electron-builder --mac dir --arm64 && codesign --force --deep --sign - release/mac-arm64/DeskResearch.app",
-    "release:zip": "npm run package:mac && node scripts/package_release.mjs"
+    "package:mac:signed": "electron-builder --mac dir --arm64",
+    "release:zip": "npm run package:mac && node scripts/package_release.mjs",
+    "release:zip:signed": "npm run package:mac:signed && node scripts/package_release.mjs",
+    "verify:mac": "node scripts/verify_signing.mjs"
   },
   "dependencies": {
     "exceljs": "3.10.0",

@@ -13,9 +13,15 @@ DeskResearch 是一个本地优先的 macOS 办公调研 Agent。输入任意研
 
 冲突提示用于提醒人工复核，不代表系统已经完成事实裁决。
 
-## 直接下载
+## 下载安装
 
-当前尚未上传 GitHub。可直接使用本项目本地生成的 `release/DeskResearch-0.1.0-mac-arm64.zip`，解压后将 `DeskResearch.app` 拖入“应用程序”。
+可从 GitHub Release 下载预构建安装包：
+
+```text
+https://github.com/MN0709/DeskResearch/releases/latest
+```
+
+解压后，将 `DeskResearch.app` 拖入「应用程序」。
 
 当前下载版要求：
 
@@ -24,13 +30,13 @@ DeskResearch 是一个本地优先的 macOS 办公调研 Agent。输入任意研
 - 已安装 Google Chrome、Microsoft Edge 或 Chromium。
 - 可以访问配置中的公开网站。
 
-当前版本使用临时本地签名，尚未经过 Apple 公证。首次打开时，macOS 可能要求用户在 Finder 中右键应用并选择“打开”。
-
 任务成果保存在：
 
 ```text
 ~/Documents/DeskResearch/outputs/
 ```
+
+> 当前 `v0.1.0` Release 使用临时本地签名、尚未公证，首次打开时 macOS 可能要求在 Finder 中右键应用并选择「打开」。正式签名并公证的版本配置方式见下文「签名与公证」。
 
 ## 本地开发
 
@@ -49,7 +55,7 @@ npm run desktop
 npm run poc
 ```
 
-构建 Apple Silicon 应用：
+构建 Apple Silicon 应用（ad-hoc 临时签名，用于本机运行）：
 
 ```bash
 npm run package:mac
@@ -59,6 +65,39 @@ npm run package:mac
 
 ```bash
 npm run release:zip
+```
+
+## 签名与公证
+
+本地开发构建默认使用 ad-hoc 临时签名，仅用于本机运行。正式公开分发需要 Apple Developer ID 签名并通过公证，这样其他用户打开时不会触发 Gatekeeper 的“未验证开发者”提示。
+
+前提条件：
+
+1. 拥有 Apple Developer Program 账号，并在钥匙串中安装「Developer ID Application」证书。
+2. 在 [appleid.apple.com](https://appleid.apple.com) 生成一个 App 专用密码（用于公证）。
+3. 已知你的 Team ID（可在 Apple Developer 后台或钥匙串证书信息中查看）。
+
+设置环境变量后执行正式构建：
+
+```bash
+export APPLE_ID="你的 Apple ID 邮箱"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+export APPLE_TEAM_ID="你的 Team ID"
+
+npm run release:zip:signed
+```
+
+说明：
+
+- `package:mac:signed` 让 electron-builder 自动发现 Developer ID 证书，启用 Hardened Runtime 签名，并通过 `notarytool` 完成公证与票据装订。
+- 若钥匙串中有多张证书，可用 `CSC_NAME` 指定签名身份，例如 `export CSC_NAME="Developer ID Application: Your Name (TEAMID)"`。
+- 构建完成后运行 `npm run verify:mac` 校验签名身份、公证票据与 Gatekeeper 评估结果。
+
+生成物位于：
+
+```text
+release/mac-arm64/DeskResearch.app
+release/DeskResearch-0.1.0-mac-arm64.zip
 ```
 
 构建结果位于：
@@ -94,9 +133,12 @@ scripts/        发布打包脚本
 | `npm run desktop` | 启动桌面应用 |
 | `npm run desktop:smoke` | 检查桌面安全桥接和关键界面 |
 | `npm run poc` | 验证采集、引用校验并生成成果 |
-| `npm run package:mac` | 构建并临时签名 `.app` |
-| `npm run release:zip` | 生成 GitHub Release ZIP |
+| `npm run package:mac` | 构建并 ad-hoc 临时签名 `.app`（本机运行） |
+| `npm run package:mac:signed` | 构建并用 Developer ID 签名、公证 |
+| `npm run release:zip` | 生成 ad-hoc 签名的发布 ZIP |
+| `npm run release:zip:signed` | 生成已签名并公证的发布 ZIP |
+| `npm run verify:mac` | 校验签名身份、公证票据与 Gatekeeper |
 
 ## 当前状态
 
-版本 `0.1.0` 已在 Apple Silicon Mac 上完成安装版验证：4 个产品、9 个官方页面、失败来源 0。正式公开分发仍建议使用 Apple Developer ID 签名并完成公证。
+版本 `0.1.0` 已在 Apple Silicon Mac 上完成安装版验证：4 个产品、9 个官方页面、失败来源 0。代码已发布到 GitHub，`v0.1.0` Release 附带当前 ad-hoc 签名的安装包；正式公开分发版本待配置 Developer ID 证书与公证后，由 `npm run release:zip:signed` 生成。
