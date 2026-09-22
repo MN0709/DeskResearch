@@ -1,0 +1,39 @@
+[
+  {
+    "product": "Kimi Work",
+    "company": "月之暗面",
+    "sources": [
+      {
+        "label": "Kimi Work 产品介绍",
+        "url": "https://www.kimi.ai/zh-hant/help/kimi-work/overview",
+        "fallbackUrls": ["https://www.kimi.com/products/kimi-work"]
+      }
+    ]
+  },
+  {
+    "product": "豆包工作",
+    "company": "字节跳动",
+    "sources": [
+      { "label": "豆包工作产品页", "url": "https://www.doubao.com/work" },
+      { "label": "豆包隐私政策", "url": "https://www.doubao.com/legal/privacy" }
+    ]
+  },
+  {
+    "product": "WorkBuddy",
+    "company": "腾讯",
+    "sources": [
+      { "label": "WorkBuddy 简介", "url": "https://www.workbuddy.cn/docs/workbuddy/Overview" },
+      { "label": "WorkBuddy 专家说明", "url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Expert-Center" },
+      { "label": "WorkBuddy 自动化说明", "url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Automation-Guide" }
+    ]
+  },
+  {
+    "product": "千问办公",
+    "company": "阿里巴巴",
+    "sources": [
+      { "label": "千问办公电脑操控", "url": "https://www.alibabacloud.com/help/zh/qwenwork/computer-use" },
+      { "label": "千问办公定时任务", "url": "https://www.alibabacloud.com/help/zh/qwenwork/qwenwork-scheduled-tasks-desktop" },
+      { "label": "千问办公简介", "url": "https://www.alibabacloud.com/help/zh/qwenwork/qwenwork-intro" }
+    ]
+  }
+]

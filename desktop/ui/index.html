@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeskResearch</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="app-icon.png" alt="" />
+          <div><strong>DeskResearch</strong><span>AI 工作台</span></div>
+        </div>
+
+        <button id="newTask" class="new-task" type="button">
+          <span class="plus">＋</span><span>新建任务</span><kbd>⌘ N</kbd>
+        </button>
+
+        <nav class="primary-nav" aria-label="主要导航">
+          <button class="nav-item active" type="button"><span class="nav-icon">◫</span><span>任务</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon">◇</span><span>工作空间</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon">⌁</span><span>自动化</span><span class="soon">即将推出</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon">✦</span><span>技能</span></button>
+        </nav>
+
+        <div class="sidebar-section">
+          <div class="section-label"><span>最近任务</span><button type="button" aria-label="更多任务">•••</button></div>
+          <button class="history-item active" type="button">
+            <span class="history-icon">◎</span>
+            <span><strong>办公 Agent 竞品调研</strong><small>等待开始</small></span>
+          </button>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="local-status"><span></span><div><strong>本地安全执行</strong><small>敏感操作前确认</small></div></div>
+          <button id="openSettings" type="button" aria-label="打开模型设置">⌘</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="task-title"><span>任务</span><b>/</b><strong>办公 Agent 竞品调研</strong></div>
+          <div class="topbar-actions">
+            <span id="modelStatus" class="privacy-pill"><i></i>规则模式</span>
+            <span id="taskStatus" class="status-chip idle">准备就绪</span>
+          </div>
+        </header>
+
+        <div class="workspace-body">
+          <section class="task-column">
+            <section class="welcome-panel">
+              <div class="welcome-copy">
+                <span class="eyebrow">DESKRESEARCH AGENT</span>
+                <h1>今天想完成什么？</h1>
+                <p>描述目标，Agent 会规划步骤、访问公开来源并交付可直接使用的办公成果。</p>
+              </div>
+
+              <div class="composer">
+                <label class="sr-only" for="taskPrompt">告诉 Agent 你想完成什么</label>
+                <textarea id="taskPrompt" placeholder="输入一个任务，使用 @ 添加文件，使用 / 选择技能">调研 Kimi Work、豆包工作、WorkBuddy、千问办公，比较任务规划、网页操作、本地文件、表格、报告、技能、定时任务、多 Agent 与权限控制，并生成带来源的 Excel 和分析报告。</textarea>
+                <div class="composer-footer">
+                  <div class="composer-tools">
+                    <button type="button" title="添加文件">＋</button>
+                    <span>公开网页</span>
+                    <span>来源确认</span>
+                  </div>
+                  <button id="runTask" class="primary-button" type="button"><span>开始执行</span><i>↑</i></button>
+                </div>
+              </div>
+
+              <div class="quick-actions">
+                <button type="button" data-prompt="调研指定行业的主要产品，生成带来源的竞品分析报告和 Excel 对比表。"><span class="quick-icon blue">⌕</span><span><strong>竞品调研</strong><small>搜索、核对并形成报告</small></span></button>
+                <button type="button" data-prompt="读取公开数据并整理成结构清晰的 Excel，给出关键结论。"><span class="quick-icon cyan">▦</span><span><strong>数据整理</strong><small>生成可编辑 Excel</small></span></button>
+                <button type="button" data-prompt="汇总公开资料，输出一份结构化办公简报。"><span class="quick-icon mint">≡</span><span><strong>办公简报</strong><small>提炼重点与行动项</small></span></button>
+              </div>
+            </section>
+
+            <section class="execution card">
+              <div class="section-heading">
+                <div><span class="eyebrow">AGENT ACTIVITY</span><h2>执行过程</h2></div>
+                <span id="progressLabel">尚未开始</span>
+              </div>
+              <div id="timeline" class="timeline">
+                <div class="timeline-item pending" data-step="approval"><span></span><div><strong>确认来源与权限</strong><small>搜索候选网页，由用户勾选</small></div></div>
+                <div class="timeline-item pending" data-step="browse"><span></span><div><strong>采集官方网页</strong><small>浏览器渲染、失败重试、截图留证</small></div></div>
+                <div class="timeline-item pending" data-step="extract"><span></span><div><strong>提取与核对证据</strong><small>保留 URL、原文片段与失败状态</small></div></div>
+                <div class="timeline-item pending" data-step="generate"><span></span><div><strong>生成办公成果</strong><small>Excel 对比表、分析报告、结构化证据</small></div></div>
+              </div>
+              <details class="log-panel">
+                <summary><span>运行日志</span><small>查看 Agent 的详细操作</small></summary>
+                <pre id="liveLog" class="live-log">等待任务开始…</pre>
+              </details>
+            </section>
+          </section>
+
+          <aside class="result-column">
+            <section class="card artifacts-card">
+              <div class="section-heading">
+                <div><span class="eyebrow">DELIVERABLES</span><h2>任务成果</h2></div>
+                <span class="file-count">本地</span>
+              </div>
+              <div id="artifacts" class="empty-state">
+                <div class="empty-visual"><span></span><span></span><span></span></div>
+                <strong>成果将在这里出现</strong>
+                <small>完成后可直接打开 Excel、报告和证据文件。</small>
+              </div>
+            </section>
+
+            <section class="card guardrail-card">
+              <div class="guardrail-head"><span class="shield">◇</span><div><span class="eyebrow">PERMISSION</span><h2>权限边界</h2></div></div>
+              <ul>
+                <li><span>访问公开官网</span><b>允许</b></li>
+                <li><span>读取登录态</span><b class="blocked">禁止</b></li>
+                <li><span>对外提交内容</span><b class="blocked">禁止</b></li>
+                <li><span>本地保存成果</span><b>允许</b></li>
+              </ul>
+              <p><i></i>任何高风险操作都会先向你确认</p>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <div id="approvalModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="approvalTitle">
+      <div class="modal-card source-modal">
+        <div class="permission-icon">⌕</div>
+        <span class="eyebrow">来源确认</span>
+        <h2 id="approvalTitle">正在查找候选来源…</h2>
+        <p id="sourceHint">Agent 会把精简后的研究关键词发送给 Bing 搜索。找到候选网页后，由你确认哪些页面可以访问。</p>
+        <div id="sourceDiscovery" class="source-discovery loading-state"><span></span><strong>正在搜索公开网页</strong><small>不会访问你的浏览历史或登录状态</small></div>
+        <div class="permission-note"><i>✓</i><span>只采集你勾选的页面，不执行提交、购买或发送</span></div>
+        <div class="modal-actions">
+          <button id="cancelApproval" class="secondary-button" type="button">取消</button>
+          <button id="confirmApproval" class="primary-button modal-primary" type="button" disabled>确认来源并开始</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="settingsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <form id="settingsForm" class="modal-card settings-modal">
+        <div class="permission-icon">✦</div>
+        <span class="eyebrow">模型设置</span>
+        <h2 id="settingsTitle">连接兼容模型接口</h2>
+        <p>支持采用 OpenAI Chat Completions 格式的 DeepSeek、Kimi、千问等接口。API Key 使用 macOS 钥匙串加密，不会显示回来或写入研究成果。</p>
+        <label class="field-label" for="baseUrl">Base URL</label>
+        <input id="baseUrl" class="text-field" type="url" required placeholder="https://api.deepseek.com/v1" />
+        <label class="field-label" for="modelName">模型名</label>
+        <input id="modelName" class="text-field" type="text" required placeholder="deepseek-chat" />
+        <label class="field-label" for="apiKey">API Key</label>
+        <input id="apiKey" class="text-field" type="password" autocomplete="off" placeholder="已保存时可留空" />
+        <div id="settingsStatus" class="settings-status">尚未配置</div>
+        <div class="modal-actions">
+          <button id="closeSettings" class="secondary-button" type="button">取消</button>
+          <button id="testSettings" class="secondary-button" type="button">测试已保存配置</button>
+          <button class="primary-button modal-primary" type="submit">保存配置</button>
+        </div>
+      </form>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>

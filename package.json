@@ -1,0 +1,50 @@
+{
+  "name": "office-agent-browser-poc",
+  "productName": "DeskResearch",
+  "description": "本地优先的办公调研 Agent",
+  "author": "DeskResearch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.mjs",
+  "scripts": {
+    "validate": "node src/validate_browser_poc.mjs",
+    "validate:llm": "node src/validate_llm_synthesis.mjs",
+    "build": "node src/build_outputs.mjs --input data/browser-evidence.json --output-dir outputs/browser-poc",
+    "poc": "npm run validate && npm run validate:llm && npm run build",
+    "desktop": "electron desktop/main.mjs",
+    "desktop:smoke": "electron desktop/main.mjs --smoke-test",
+    "package:mac": "electron-builder --mac dir --arm64 && codesign --force --deep --sign - release/mac-arm64/DeskResearch.app",
+    "release:zip": "npm run package:mac && node scripts/package_release.mjs"
+  },
+  "dependencies": {
+    "exceljs": "3.10.0",
+    "playwright-core": "^1.55.0"
+  },
+  "devDependencies": {
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  },
+  "build": {
+    "appId": "com.deskresearch.app",
+    "productName": "DeskResearch",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "desktop/**/*",
+      "src/**/*",
+      "config/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/DeskResearch-v3.icns",
+      "target": ["dir"]
+    }
+  }
+}

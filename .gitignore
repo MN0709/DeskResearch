@@ -1,0 +1,10 @@
+node_modules/
+release/
+outputs/
+data/browser-evidence.json
+
+.DS_Store
+*.log
+
+build/*.iconset*/
+build/icon-preview-*/
