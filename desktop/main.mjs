@@ -10,7 +10,8 @@ const outputRoot = app.isPackaged
   ? path.join(app.getPath("documents"), "DeskResearch", "outputs")
   : path.join(rootDir, "outputs");
 let mainWindow;
-let activeTask;
+const tasks = new Map();
+let taskSequence = 0;
 
 function llmPaths() {
   const configDir = path.join(app.getPath("userData"), "llm");
@@ -168,15 +169,16 @@ ipcMain.handle("llm:save-config", (_event, input) => saveLlmConfig(input));
 ipcMain.handle("llm:test-config", () => testLlmConfig());
 
 ipcMain.handle("task:start", async (_event, request) => {
-  if (activeTask) throw new Error("已有任务正在运行");
   const prompt = typeof request === "string" ? request : request?.prompt;
   const sources = Array.isArray(request?.sources) ? request.sources : [];
   const llmConfig = await readLlmConfig({ includeSecret: true });
+  const taskId = `task-${Date.now()}-${++taskSequence}`;
   const child = spawn(process.execPath, [
     path.join(rootDir, "src/run_task.mjs"),
     "--prompt", prompt,
     "--sources-json", JSON.stringify(sources),
-    "--output-root", outputRoot
+    "--output-root", outputRoot,
+    "--task-id", taskId
   ], {
     cwd: app.getPath("userData"),
     env: {
@@ -188,7 +190,7 @@ ipcMain.handle("task:start", async (_event, request) => {
     },
     stdio: ["ignore", "pipe", "pipe"]
   });
-  activeTask = child;
+  tasks.set(taskId, { child, prompt });
   let buffer = "";
   child.stdout.on("data", (chunk) => {
     buffer += chunk.toString();
@@ -197,18 +199,19 @@ ipcMain.handle("task:start", async (_event, request) => {
     for (const line of lines) {
       if (!line.trim()) continue;
       try {
-        mainWindow.webContents.send("task:event", JSON.parse(line));
+        const event = JSON.parse(line);
+        mainWindow.webContents.send("task:event", { ...event, taskId: event.taskId || event.runId || taskId });
       } catch {
-        mainWindow.webContents.send("task:event", { type: "task.log", message: line });
+        mainWindow.webContents.send("task:event", { type: "task.log", taskId, message: line });
       }
     }
   });
-  child.stderr.on("data", (chunk) => mainWindow.webContents.send("task:event", { type: "task.log", message: chunk.toString() }));
+  child.stderr.on("data", (chunk) => mainWindow.webContents.send("task:event", { type: "task.log", taskId, message: chunk.toString() }));
   child.on("exit", (code) => {
-    if (code !== 0) mainWindow.webContents.send("task:event", { type: "task.failed", message: `任务进程退出码 ${code}` });
-    activeTask = null;
+    if (code !== 0) mainWindow.webContents.send("task:event", { type: "task.failed", taskId, message: `任务进程退出码 ${code}` });
+    tasks.delete(taskId);
   });
-  return { started: true };
+  return { started: true, taskId, prompt };
 });
 
 ipcMain.handle("artifact:open", async (_event, targetPath) => {

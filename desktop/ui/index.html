@@ -14,6 +14,7 @@
           <div><strong>DeskResearch</strong><span>本地办公调研</span></div>
         </div>
         <div class="topbar-actions">
+          <button id="openTasks" class="tasks-nav" type="button">任务 <span id="taskBadge" class="task-badge hidden">0</span></button>
           <span id="modelStatus" class="privacy-pill"><i></i>规则模式</span>
           <button id="openSettings" class="settings-btn" type="button" aria-label="打开模型设置">⚙ 设置</button>
         </div>
@@ -44,46 +45,28 @@
           </div>
         </section>
 
-        <!-- 执行与成果：任务运行后显示 -->
-        <section id="runView" class="run-view hidden">
-          <div class="run-header">
-            <button id="backToHome" class="back-btn" type="button">← 新的任务</button>
-            <div class="run-meta">
-              <span id="taskStatus" class="status-chip idle">准备就绪</span>
+        <!-- 任务工作台：后台多任务 -->
+        <section id="tasksView" class="tasks-view hidden">
+          <div class="tasks-head">
+            <div>
+              <span class="eyebrow">WORKSPACE</span>
+              <h1>任务工作台</h1>
+              <p>任务在后台运行，你可以回到首页继续发起新任务，成果完成后在这里直接打开。</p>
             </div>
+            <button id="backToHome" class="primary-button" type="button"><span>＋ 发起新任务</span><i>↑</i></button>
           </div>
-
-          <section class="card execution">
-            <div class="section-heading">
-              <div><span class="eyebrow">AGENT ACTIVITY</span><h2>执行过程</h2></div>
-              <span id="progressLabel">尚未开始</span>
-            </div>
-            <div id="timeline" class="timeline">
-              <div class="timeline-item pending" data-step="approval"><span></span><div><strong>确认来源</strong><small>搜索候选网页，由你勾选</small></div></div>
-              <div class="timeline-item pending" data-step="browse"><span></span><div><strong>采集网页</strong><small>浏览器渲染、失败重试</small></div></div>
-              <div class="timeline-item pending" data-step="extract"><span></span><div><strong>核对证据</strong><small>保留 URL 与原文片段</small></div></div>
-              <div class="timeline-item pending" data-step="generate"><span></span><div><strong>生成成果</strong><small>Excel、报告、证据</small></div></div>
-            </div>
-            <details class="log-panel">
-              <summary><span>运行日志</span><small>查看 Agent 的详细操作</small></summary>
-              <pre id="liveLog" class="live-log">等待任务开始…</pre>
-            </details>
-          </section>
-
-          <section class="card artifacts-card">
-            <div class="section-heading">
-              <div><span class="eyebrow">DELIVERABLES</span><h2>任务成果</h2></div>
-              <span class="file-count">本地</span>
-            </div>
-            <div id="artifacts" class="empty-state">
-              <div class="empty-visual"><span></span><span></span><span></span></div>
-              <strong>成果将在这里出现</strong>
-              <small>完成后可直接打开 Excel、报告和证据文件。</small>
-            </div>
-          </section>
+          <div id="taskList" class="task-list"></div>
+          <div id="tasksEmpty" class="tasks-empty">
+            <div class="empty-visual"><span></span><span></span><span></span></div>
+            <strong>还没有任务</strong>
+            <small>回到首页输入一个主题，Agent 会在后台执行并交付成果。</small>
+            <button id="startFirstTask" class="secondary-button" type="button">去发起任务</button>
+          </div>
         </section>
       </main>
     </div>
+
+    <div id="toast" class="toast hidden" role="status"></div>
 
     <div id="approvalModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="approvalTitle">
       <div class="modal-card source-modal">

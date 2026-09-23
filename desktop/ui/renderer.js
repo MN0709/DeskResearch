@@ -1,20 +1,21 @@
 const runButton = document.querySelector("#runTask");
-const backToHomeButton = document.querySelector("#backToHome");
-const homeView = document.querySelector("#homeView");
-const runView = document.querySelector("#runView");
-const workspace = document.querySelector(".workspace");
 const promptInput = document.querySelector("#taskPrompt");
+const homeView = document.querySelector("#homeView");
+const tasksView = document.querySelector("#tasksView");
+const workspace = document.querySelector(".workspace");
+const openTasksButton = document.querySelector("#openTasks");
+const backToHomeButton = document.querySelector("#backToHome");
+const startFirstTaskButton = document.querySelector("#startFirstTask");
+const taskList = document.querySelector("#taskList");
+const tasksEmpty = document.querySelector("#tasksEmpty");
+const taskBadge = document.querySelector("#taskBadge");
+const toast = document.querySelector("#toast");
 const modal = document.querySelector("#approvalModal");
 const confirmButton = document.querySelector("#confirmApproval");
 const cancelButton = document.querySelector("#cancelApproval");
 const approvalTitle = document.querySelector("#approvalTitle");
 const sourceHint = document.querySelector("#sourceHint");
 const sourceDiscovery = document.querySelector("#sourceDiscovery");
-const statusChip = document.querySelector("#taskStatus");
-const progressLabel = document.querySelector("#progressLabel");
-const liveLog = document.querySelector("#liveLog");
-const artifactsContainer = document.querySelector("#artifacts");
-const logPanel = document.querySelector(".log-panel");
 const quickActions = [...document.querySelectorAll("[data-prompt]")];
 const openSettingsButton = document.querySelector("#openSettings");
 const settingsModal = document.querySelector("#settingsModal");
@@ -26,37 +27,135 @@ const modelNameInput = document.querySelector("#modelName");
 const apiKeyInput = document.querySelector("#apiKey");
 const settingsStatus = document.querySelector("#settingsStatus");
 const modelStatus = document.querySelector("#modelStatus");
-const steps = Object.fromEntries([...document.querySelectorAll(".timeline-item")].map((item) => [item.dataset.step, item]));
+const tasks = new Map();
 let discoveredSources = [];
 let discoveryAttempt = 0;
-let running = false;
+let toastTimer;
 
 function showHome() {
-  runView.classList.add("hidden");
+  tasksView.classList.add("hidden");
   homeView.classList.remove("hidden");
   promptInput.focus();
 }
 
-function showRun() {
+function showTasks() {
   homeView.classList.add("hidden");
-  runView.classList.remove("hidden");
+  tasksView.classList.remove("hidden");
   workspace.scrollTop = 0;
+  updateEmptyState();
 }
 
-function setStatus(text, state) {
-  statusChip.textContent = text;
-  statusChip.className = `status-chip ${state}`;
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.add("hidden"), 4000);
 }
 
-function setStep(name, state) {
-  const step = steps[name];
-  if (step) step.className = `timeline-item ${state}`;
+function updateBadge() {
+  const runningCount = [...tasks.values()].filter((task) => task.status === "running").length;
+  taskBadge.textContent = String(runningCount);
+  taskBadge.classList.toggle("hidden", runningCount === 0);
 }
 
-function appendLog(message) {
-  if (liveLog.textContent === "等待任务开始…") liveLog.textContent = "";
-  liveLog.textContent += `${message}\n`;
-  liveLog.scrollTop = liveLog.scrollHeight;
+function updateEmptyState() {
+  tasksEmpty.classList.toggle("hidden", tasks.size > 0);
+  taskList.classList.toggle("hidden", tasks.size === 0);
+}
+
+function createTaskCard(taskId, prompt) {
+  const card = document.createElement("article");
+  card.className = "task-card";
+  card.dataset.taskId = taskId;
+
+  const head = document.createElement("div");
+  head.className = "task-card-head";
+  const title = document.createElement("strong");
+  title.className = "task-title";
+  title.textContent = prompt.length > 72 ? `${prompt.slice(0, 72)}…` : prompt;
+  title.title = prompt;
+  const statusChip = document.createElement("span");
+  statusChip.className = "status-chip running";
+  statusChip.textContent = "运行中";
+  head.append(title, statusChip);
+
+  const progress = document.createElement("div");
+  progress.className = "task-progress";
+  progress.textContent = "正在准备…";
+
+  const steps = document.createElement("div");
+  steps.className = "task-steps";
+  const stepDots = {};
+  for (const name of ["approval", "browse", "extract", "generate"]) {
+    const dot = document.createElement("span");
+    dot.className = "task-step";
+    dot.dataset.step = name;
+    steps.appendChild(dot);
+    stepDots[name] = dot;
+  }
+
+  const logDetails = document.createElement("details");
+  logDetails.className = "task-log";
+  const summary = document.createElement("summary");
+  summary.textContent = "运行日志";
+  const pre = document.createElement("pre");
+  pre.className = "task-log-pre";
+  pre.textContent = "";
+  logDetails.append(summary, pre);
+
+  const artifacts = document.createElement("div");
+  artifacts.className = "task-artifacts";
+
+  card.append(head, progress, steps, logDetails, artifacts);
+  taskList.prepend(card);
+
+  return {
+    id: taskId,
+    prompt,
+    status: "running",
+    stepStates: { approval: "pending", browse: "pending", extract: "pending", generate: "pending" },
+    logs: [],
+    artifacts: [],
+    refs: { title, statusChip, progress, stepDots, logDetails, pre, artifacts }
+  };
+}
+
+function setTaskStatus(task, text, state) {
+  task.status = state === "running" ? "running" : (state === "done" ? "done" : state);
+  task.refs.statusChip.textContent = text;
+  task.refs.statusChip.className = `status-chip ${state}`;
+  updateBadge();
+}
+
+function setTaskStep(task, name, state) {
+  task.stepStates[name] = state;
+  const dot = task.refs.stepDots[name];
+  if (dot) dot.className = `task-step ${state}`;
+}
+
+function setTaskProgress(task, text) {
+  task.refs.progress.textContent = text;
+}
+
+function appendTaskLog(task, message) {
+  task.logs.push(message);
+  const pre = task.refs.pre;
+  pre.textContent += `${message}\n`;
+  pre.scrollTop = pre.scrollHeight;
+}
+
+function showTaskArtifacts(task, artifacts) {
+  task.artifacts = artifacts;
+  const container = task.refs.artifacts;
+  container.innerHTML = "";
+  for (const artifact of artifacts) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "artifact-button";
+    button.innerHTML = `<span class="artifact-kind">${artifact.kind}</span><span><strong>${artifact.label}</strong><small>点击打开本地文件</small></span>`;
+    button.addEventListener("click", () => window.officeAgent.openArtifact(artifact.path));
+    container.appendChild(button);
+  }
 }
 
 function showModelState(config) {
@@ -76,26 +175,6 @@ async function loadModelConfig() {
   } catch (error) {
     settingsStatus.textContent = error.message;
     settingsStatus.className = "settings-status error";
-  }
-}
-
-function resetTask() {
-  Object.values(steps).forEach((step) => { step.className = "timeline-item pending"; });
-  liveLog.textContent = "等待任务开始…";
-  artifactsContainer.className = "empty-state";
-  artifactsContainer.innerHTML = '<div class="empty-visual"><span></span><span></span><span></span></div><strong>成果将在这里出现</strong><small>完成后可直接打开 Excel、报告和证据文件。</small>';
-}
-
-function showArtifacts(artifacts) {
-  artifactsContainer.className = "artifact-list";
-  artifactsContainer.innerHTML = "";
-  for (const artifact of artifacts) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "artifact-button";
-    button.innerHTML = `<span class="artifact-kind">${artifact.kind}</span><span><strong>${artifact.label}</strong><small>点击打开本地文件</small></span>`;
-    button.addEventListener("click", () => window.officeAgent.openArtifact(artifact.path));
-    artifactsContainer.appendChild(button);
   }
 }
 
@@ -170,14 +249,12 @@ runButton.addEventListener("click", async () => {
   }
 });
 
+openTasksButton.addEventListener("click", showTasks);
 backToHomeButton.addEventListener("click", () => {
-  if (running) return;
-  resetTask();
-  setStatus("准备就绪", "idle");
-  progressLabel.textContent = "尚未开始";
   promptInput.value = "";
   showHome();
 });
+startFirstTaskButton.addEventListener("click", showHome);
 
 for (const action of quickActions) {
   action.addEventListener("click", () => {
@@ -231,72 +308,70 @@ cancelButton.addEventListener("click", () => {
 confirmButton.addEventListener("click", async () => {
   const sources = selectedSources();
   if (sources.length === 0) return;
+  const prompt = promptInput.value.trim();
   modal.classList.add("hidden");
-  resetTask();
-  running = true;
-  runButton.disabled = true;
-  backToHomeButton.disabled = true;
-  setStatus("执行中", "running");
-  progressLabel.textContent = "正在确认权限";
-  setStep("approval", "done");
-  setStep("browse", "active");
-  logPanel.open = true;
-  showRun();
-  appendLog(`已确认 ${sources.length} 个公开来源：${sources.map((source) => source.domain).join("、")}`);
+  confirmButton.disabled = true;
   try {
-    await window.officeAgent.startTask({ prompt: promptInput.value.trim(), sources });
+    const result = await window.officeAgent.startTask({ prompt, sources });
+    const task = createTaskCard(result.taskId, result.prompt || prompt);
+    tasks.set(result.taskId, task);
+    updateEmptyState();
+    updateBadge();
+    promptInput.value = "";
+    showHome();
+    showToast("任务已在后台开始，可随时在「任务」中查看进度");
   } catch (error) {
-    setStatus("启动失败", "failed");
-    appendLog(error.message);
-    running = false;
-    runButton.disabled = false;
-    backToHomeButton.disabled = false;
+    showToast(error.message || "任务启动失败");
   }
 });
 
 window.officeAgent.onTaskEvent((event) => {
+  const task = tasks.get(event.taskId);
+  if (!task) return;
+
+  if (event.type === "task.started") {
+    setTaskProgress(task, "开始采集公开网页");
+    setTaskStep(task, "approval", "done");
+    setTaskStep(task, "browse", "active");
+  }
   if (event.state === "started") {
-    progressLabel.textContent = `正在访问 ${event.product} · ${event.source}`;
-    appendLog(`访问：${event.product} / ${event.source}`);
+    setTaskProgress(task, `正在访问 ${event.product} · ${event.source}`);
+    appendTaskLog(task, `访问：${event.product} / ${event.source}`);
   }
   if (event.state === "finished") {
-    appendLog(`${event.status === 200 ? "完成" : "异常"}：${event.product} / ${event.source} · HTTP ${event.status}`);
-  }
-  if (event.type === "task.collected") {
-    setStep("browse", "done");
-    setStep("extract", "done");
-    setStep("generate", "active");
-    progressLabel.textContent = "正在生成 Excel 和报告";
+    appendTaskLog(task, `${event.status === 200 ? "完成" : "异常"}：${event.product} / ${event.source} · HTTP ${event.status}`);
   }
   if (event.type === "task.synthesizing") {
-    setStep("browse", "done");
-    setStep("extract", "active");
-    progressLabel.textContent = event.configured ? "正在生成带引用语义总结" : "未配置模型，使用规则证据摘要";
-    appendLog(event.configured ? "模型正在依据已采集证据生成总结…" : "未配置模型，保留规则抽取结果");
+    setTaskStep(task, "browse", "done");
+    setTaskStep(task, "extract", "active");
+    setTaskProgress(task, event.configured ? "正在生成带引用语义总结" : "未配置模型，使用规则证据摘要");
+    appendTaskLog(task, event.configured ? "模型正在依据已采集证据生成总结…" : "未配置模型，保留规则抽取结果");
   }
-  if (event.type === "task.log" && event.message) appendLog(event.message);
-  if (event.type === "task.generating") appendLog("正在生成本地办公成果…");
+  if (event.type === "task.collected") {
+    setTaskStep(task, "extract", "done");
+    setTaskStep(task, "generate", "active");
+    setTaskProgress(task, "正在生成 Excel 和报告");
+  }
+  if (event.type === "task.generating") {
+    appendTaskLog(task, "正在生成本地办公成果…");
+  }
+  if (event.type === "task.log" && event.message) appendTaskLog(task, event.message);
   if (event.type === "task.completed") {
-    setStep("generate", "done");
-    setStatus("已完成", "done");
-    progressLabel.textContent = `完成 · 失败来源 ${event.failedSourceCount}`;
-    appendLog("任务完成，成果已保存到本地");
-    showArtifacts(event.artifacts);
-    logPanel.open = false;
-    running = false;
-    runButton.disabled = false;
-    backToHomeButton.disabled = false;
+    setTaskStep(task, "generate", "done");
+    setTaskStatus(task, "已完成", "done");
+    setTaskProgress(task, `完成 · 失败来源 ${event.failedSourceCount}`);
+    appendTaskLog(task, "任务完成，成果已保存到本地");
+    showTaskArtifacts(task, event.artifacts);
+    showToast(`任务「${task.refs.title.textContent}」已完成，可打开成果文件`);
   }
   if (event.type === "task.failed") {
-    setStep("browse", "failed");
-    setStep("generate", "failed");
-    setStatus("执行失败", "failed");
-    progressLabel.textContent = event.message || "任务失败";
-    appendLog(event.message || "任务失败");
-    running = false;
-    runButton.disabled = false;
-    backToHomeButton.disabled = false;
+    setTaskStep(task, "generate", "failed");
+    setTaskStatus(task, "执行失败", "failed");
+    setTaskProgress(task, event.message || "任务失败");
+    appendTaskLog(task, event.message || "任务失败");
+    showToast(`任务「${task.refs.title.textContent}」执行失败`);
   }
 });
 
 loadModelConfig();
+updateEmptyState();
