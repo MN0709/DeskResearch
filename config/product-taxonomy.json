@@ -1,28 +1,48 @@
 {
   "categories": [
     {
+      "key": "视频生成",
+      "keywords": ["视频生成", "AI视频", "视频Agent", "视频创作", "视频大模型", "生成视频", "文生视频", "图生视频", "AI生成视频", "视频生成产品"],
+      "products": [
+        { "name": "可灵", "query": "Kling AI" },
+        { "name": "即梦", "query": "即梦AI" },
+        { "name": "Luma", "query": "Luma AI video" },
+        { "name": "LiblibAI", "query": "LiblibAI 哩布哩布" },
+        { "name": "Runway", "query": "Runway AI video" },
+        { "name": "Sora", "query": "Sora OpenAI video" },
+        { "name": "Pika", "query": "Pika AI video" },
+        { "name": "Vidu", "query": "Vidu AI" },
+        { "name": "海螺AI", "query": "海螺AI" }
+      ]
+    },
+    {
       "key": "AIGC",
       "keywords": ["AIGC", "生成式AI", "生成式人工智能", "AI大模型", "大模型产品", "AI工具", "AI产品", "AI软件", "生成式AI产品"],
       "products": [
-        "文心一言",
-        "通义千问",
-        "Kimi",
-        "豆包",
-        "讯飞星火",
-        "腾讯混元",
-        "智谱清言",
-        "DeepSeek",
-        "ChatGPT",
-        "Claude",
-        "Gemini",
-        "Midjourney",
-        "Stable Diffusion"
+        { "name": "文心一言", "query": "文心一言" },
+        { "name": "通义千问", "query": "通义千问" },
+        { "name": "Kimi", "query": "Kimi" },
+        { "name": "豆包", "query": "豆包" },
+        { "name": "讯飞星火", "query": "讯飞星火" },
+        { "name": "腾讯混元", "query": "腾讯混元" },
+        { "name": "智谱清言", "query": "智谱清言" },
+        { "name": "DeepSeek", "query": "DeepSeek" },
+        { "name": "ChatGPT", "query": "ChatGPT" },
+        { "name": "Claude", "query": "Claude AI" },
+        { "name": "Gemini", "query": "Gemini Google" },
+        { "name": "Midjourney", "query": "Midjourney" },
+        { "name": "Stable Diffusion", "query": "Stable Diffusion" }
       ]
     },
     {
       "key": "办公Agent",
       "keywords": ["办公Agent", "办公智能体", "工作Agent", "办公助手", "AI办公"],
-      "products": ["Kimi Work", "豆包工作", "WorkBuddy", "千问办公"]
+      "products": [
+        { "name": "Kimi Work", "query": "Kimi Work" },
+        { "name": "豆包工作", "query": "豆包工作" },
+        { "name": "WorkBuddy", "query": "WorkBuddy" },
+        { "name": "千问办公", "query": "千问办公" }
+      ]
     }
   ]
 }

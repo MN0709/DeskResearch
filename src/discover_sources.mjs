@@ -84,8 +84,8 @@ try {
   } else {
     const category = matchCategory(prompt);
     if (category) {
-      discoveredProducts = category.products;
-      queries = category.products.slice(0, 4);
+      discoveredProducts = category.products.map((product) => product.name);
+      queries = category.products.slice(0, 4).map((product) => product.query);
     } else {
       queries = [query];
     }
@@ -96,7 +96,7 @@ try {
     const searchPage = await searchContext.newPage();
     let group = [];
     try {
-      const response = await searchPage.goto(`https://www.bing.com/search?q=${encodeURIComponent(`${itemQuery} 官方 介绍`)}`, {
+      const response = await searchPage.goto(`https://www.bing.com/search?q=${encodeURIComponent(itemQuery)}`, {
         waitUntil: "domcontentloaded",
         timeout: 35_000
       });
