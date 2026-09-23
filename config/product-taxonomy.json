@@ -1,0 +1,28 @@
+{
+  "categories": [
+    {
+      "key": "AIGC",
+      "keywords": ["AIGC", "生成式AI", "生成式人工智能", "AI大模型", "大模型产品", "AI工具", "AI产品", "AI软件", "生成式AI产品"],
+      "products": [
+        "文心一言",
+        "通义千问",
+        "Kimi",
+        "豆包",
+        "讯飞星火",
+        "腾讯混元",
+        "智谱清言",
+        "DeepSeek",
+        "ChatGPT",
+        "Claude",
+        "Gemini",
+        "Midjourney",
+        "Stable Diffusion"
+      ]
+    },
+    {
+      "key": "办公Agent",
+      "keywords": ["办公Agent", "办公智能体", "工作Agent", "办公助手", "AI办公"],
+      "products": ["Kimi Work", "豆包工作", "WorkBuddy", "千问办公"]
+    }
+  ]
+}

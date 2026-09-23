@@ -214,7 +214,9 @@ function renderSources(result) {
     sourceDiscovery.appendChild(option);
   });
   approvalTitle.textContent = "确认本次研究来源";
-  sourceHint.textContent = `搜索关键词：“${result.query}”。请取消不可信或与任务无关的网站，Agent 只会访问勾选页面。`;
+  sourceHint.textContent = result.discoveredProducts?.length
+    ? `识别到这些调研对象：${result.discoveredProducts.slice(0, 8).join("、")}。正在搜索它们的官方来源，请勾选要访问的页面。`
+    : `搜索关键词：“${result.query}”。请取消不可信或与任务无关的网站，Agent 只会访问勾选页面。`;
   updateConfirmState();
 }
 

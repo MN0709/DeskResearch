@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import { chromium } from "playwright-core";
 
 const chromeCandidates = [
@@ -9,6 +10,18 @@ const chromeCandidates = [
 
 const promptIndex = process.argv.indexOf("--prompt");
 const prompt = promptIndex >= 0 ? process.argv[promptIndex + 1] : "";
+const rootDir = path.resolve(import.meta.dirname, "..");
+const taxonomy = JSON.parse(await fs.readFile(path.join(rootDir, "config/product-taxonomy.json"), "utf8"));
+
+function matchCategory(promptText) {
+  const lowered = promptText.toLowerCase();
+  for (const category of taxonomy.categories) {
+    if (category.keywords.some((keyword) => lowered.includes(keyword.toLowerCase()))) {
+      return category;
+    }
+  }
+  return null;
+}
 
 async function findBrowser() {
   for (const candidate of chromeCandidates) {
@@ -58,42 +71,60 @@ function isPublicUrl(rawUrl) {
 
 const executablePath = await findBrowser();
 const browser = await chromium.launch({ executablePath, headless: true });
-const page = await browser.newPage({ locale: "zh-CN", viewport: { width: 1280, height: 900 } });
 
 try {
   const query = searchQuery(prompt) || prompt.trim().slice(0, 100);
   const namedEntities = [...new Set((prompt.match(/[A-Z][A-Za-z0-9-]*(?:\s+[A-Z][A-Za-z0-9-]*)*/g) ?? [])
     .map((item) => item.trim())
     .filter((item) => !/^(AI|Agent|Excel|PPT)$/i.test(item)))];
-  const queries = namedEntities.length > 1 ? namedEntities.slice(0, 4) : [query];
+  let discoveredProducts = [];
+  let queries;
+  if (namedEntities.length > 1) {
+    queries = namedEntities.slice(0, 4);
+  } else {
+    const category = matchCategory(prompt);
+    if (category) {
+      discoveredProducts = category.products;
+      queries = category.products.slice(0, 4);
+    } else {
+      queries = [query];
+    }
+  }
   const resultGroups = [];
   for (const itemQuery of queries) {
-    const response = await page.goto(`https://www.bing.com/search?q=${encodeURIComponent(`${itemQuery} 官方 介绍`)}`, {
-      waitUntil: "domcontentloaded",
-      timeout: 35_000
-    });
-    if (!response || response.status() >= 400) throw new Error(`搜索服务返回 HTTP ${response?.status() ?? 0}`);
-    await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => {});
+    const searchContext = await browser.newContext({ locale: "zh-CN", viewport: { width: 1280, height: 900 } });
+    const searchPage = await searchContext.newPage();
     let group = [];
-    let readError;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      await page.waitForTimeout(500 + attempt * 400);
-      try {
-        group = await page.locator("li.b_algo").evaluateAll((items) => items.slice(0, 12).map((item) => {
-          const link = item.querySelector("h2 a");
-          return {
-            title: link?.textContent?.trim() || "",
-            url: link?.href || "",
-            snippet: item.querySelector(".b_caption p")?.textContent?.trim() || ""
-          };
-        }));
-        if (group.length > 0) break;
-      } catch (error) {
-        readError = error;
+    try {
+      const response = await searchPage.goto(`https://www.bing.com/search?q=${encodeURIComponent(`${itemQuery} 官方 介绍`)}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 35_000
+      });
+      if (!response || response.status() >= 400) throw new Error(`搜索服务返回 HTTP ${response?.status() ?? 0}`);
+      await searchPage.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => {});
+      let readError;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await searchPage.waitForTimeout(500 + attempt * 400);
+        try {
+          group = await searchPage.locator("li.b_algo").evaluateAll((items) => items.slice(0, 12).map((item) => {
+            const link = item.querySelector("h2 a");
+            return {
+              title: link?.textContent?.trim() || "",
+              url: link?.href || "",
+              snippet: item.querySelector(".b_caption p")?.textContent?.trim() || ""
+            };
+          }));
+          if (group.length > 0) break;
+        } catch (error) {
+          readError = error;
+        }
       }
+      if (group.length === 0 && readError) throw readError;
+    } finally {
+      await searchContext.close();
     }
-    if (group.length === 0 && readError) throw readError;
     resultGroups.push(group);
+    if (queries.length > 1) await new Promise((resolve) => setTimeout(resolve, 1200));
   }
   const rawResults = [];
   for (let index = 0; index < 12; index += 1) {
@@ -123,7 +154,7 @@ try {
     if (results.length >= 8) break;
   }
   if (results.length === 0) throw new Error("未找到可用候选来源，请调整任务描述后重试");
-  process.stdout.write(`${JSON.stringify({ query: queries.join(" / "), provider: "Bing", results })}\n`);
+  process.stdout.write(`${JSON.stringify({ query: queries.join(" / "), provider: "Bing", results, ...(discoveredProducts.length > 0 ? { discoveredProducts } : {}) })}\n`);
 } finally {
   await browser.close();
 }
