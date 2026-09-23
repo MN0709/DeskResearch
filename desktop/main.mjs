@@ -223,7 +223,13 @@ ipcMain.handle("artifact:open", async (_event, targetPath) => {
   return { opened: true };
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  // 提前创建输出目录，把系统权限确认（如文稿文件夹访问）提前到首次启动，避免任务中途弹出打断。
+  try {
+    await fs.mkdir(outputRoot, { recursive: true });
+  } catch {}
+  createWindow();
+});
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
