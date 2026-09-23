@@ -1,19 +1,78 @@
+<div align="center">
+
+<img src="build/logo-256.png" alt="DeskResearch logo" width="96" height="96" />
+
 # DeskResearch
 
-DeskResearch 是一个本地优先的 macOS 办公调研 Agent。输入任意研究主题后，它会搜索公开网页、让用户确认候选来源、保留逐条引用与失败状态，并生成 Excel 证据底稿、Markdown 报告和 JSON 证据。用户还可以配置采用 OpenAI Chat Completions 格式的模型接口，生成受证据约束的语义总结。
+**输入研究主题，自动搜索公开网页、核对证据，生成带引用的 Excel 底稿、Markdown 报告与 JSON 证据。**
 
-## 研究流程
+<p>
+  <img src="https://img.shields.io/badge/platform-macOS-999999" alt="platform" />
+  <img src="https://img.shields.io/badge/Electron-44-47848F" alt="electron" />
+  <img src="https://img.shields.io/badge/Node.js-20+-339933" alt="nodejs" />
+  <img src="https://img.shields.io/badge/Playwright-1.55-2EAD33" alt="playwright" />
+  <img src="https://img.shields.io/badge/ExcelJS-3.10-107C41" alt="exceljs" />
+</p>
 
-1. 输入研究主题或需要比较的产品。
-2. Agent 将精简后的关键词发送给 Bing，查找公开候选来源。
-3. 用户取消不可信或无关网站，只授权访问勾选页面。
-4. Agent 提取带 `[S1]`、`[S2]` 引用的网页原文，并提示跨来源的潜在词面冲突。
-5. 若已配置模型，Agent 只把已抽取证据交给模型，并丢弃没有有效证据编号的模型结论。
-6. 生成语义总结、证据结论、来源、潜在冲突工作表和带来源目录的研究报告；未配置模型时自动回退为原文证据摘要。
+</div>
 
-冲突提示用于提醒人工复核，不代表系统已经完成事实裁决。
+---
 
-## 下载安装
+一个**本地优先的 macOS 办公调研 Agent**：输入研究主题或需要比较的产品，它会搜索公开网页、让你勾选可信来源、提取带 `[S1]` / `[S2]` 引用的证据原文，并生成 **Excel 证据底稿 + Markdown 报告 + JSON 证据**。可配置 OpenAI 兼容模型接口，生成受证据约束的语义总结。
+
+> 💡 **本地安全执行** —— 只访问你勾选的公开页面，不读浏览历史与登录态，不提交表单；成果只保存在本地。
+
+## 🧭 工作流程
+
+```mermaid
+flowchart LR
+    A[输入主题 / 产品] --> B[关键词发送 Bing<br/>搜索候选来源]
+    B --> C[用户勾选可信来源]
+    C --> D[浏览器采集<br/>渲染 · 失败重试 · 截图留证]
+    D --> E[提取证据<br/>带 S1 / S2 引用]
+    E --> F{已配置模型?}
+    F -->|是| G[语义总结<br/>受证据约束]
+    F -->|否| H[原文证据摘要]
+    G --> I[生成成果<br/>Excel + Markdown + JSON]
+    H --> I
+```
+
+## ✨ 功能特性
+
+| 能力 | 说明 |
+| --- | --- |
+| 🔍 主题搜索 | 精简关键词后发送 Bing，查找公开候选来源 |
+| ✅ 来源确认 | 用户勾选可信页面，只访问被授权的 URL |
+| 📑 证据引用 | 提取带 `[S1]` / `[S2]` 引用的网页原文，保留 URL、原文片段与失败状态 |
+| ⚠️ 冲突提示 | 跨来源词面冲突提示，供人工复核（不代替事实裁决） |
+| 🧠 模型总结 | 可选配置 OpenAI 兼容接口；只把已抽取证据交给模型，无证据编号的结论会被丢弃 |
+| 📊 成果生成 | Excel 证据底稿、Markdown 报告、JSON 证据，均可本地打开 |
+| 🔐 本地安全 | 不读浏览历史 / 登录态 / Cookie，不提交表单，API Key 加密存储 |
+
+## 🧱 技术栈
+
+| 层 | 技术 |
+| --- | --- |
+| 🖥️ 桌面端 | Electron 44 · macOS（Apple Silicon） |
+| 🌐 浏览器采集 | Playwright（Chrome / Edge / Chromium） |
+| 📊 成果生成 | ExcelJS（.xlsx）· Markdown · JSON |
+| 🤖 模型 | OpenAI Chat Completions 兼容接口（可选） |
+| 🗄️ 存储 | 本地任务目录 `~/Documents/DeskResearch/outputs/` |
+
+## 📁 目录结构
+
+```text
+desktop/          Electron 主进程、预加载脚本与界面
+src/              浏览器采集、证据分析、成果生成
+  src/lib/        采集器、证据、模型合成等核心模块
+config/           官方来源配置（sources.json）
+build/            应用图标
+scripts/          发布打包与签名校验脚本
+data/             运行数据（已 gitignore）
+outputs/          本地测试产物（已 gitignore）
+```
+
+## 🚀 下载安装
 
 可从 GitHub Release 下载预构建安装包：
 
@@ -23,12 +82,11 @@ https://github.com/MN0709/DeskResearch/releases/latest
 
 解压后，将 `DeskResearch.app` 拖入「应用程序」。
 
-当前下载版要求：
+要求：
 
-- Apple Silicon Mac。
-- macOS 13 或更高版本。
-- 已安装 Google Chrome、Microsoft Edge 或 Chromium。
-- 可以访问配置中的公开网站。
+- Apple Silicon Mac
+- macOS 13 或更高版本
+- 已安装 Google Chrome、Microsoft Edge 或 Chromium
 
 任务成果保存在：
 
@@ -36,9 +94,9 @@ https://github.com/MN0709/DeskResearch/releases/latest
 ~/Documents/DeskResearch/outputs/
 ```
 
-> 当前 `v0.1.0` Release 使用临时本地签名、尚未公证，首次打开时 macOS 可能要求在 Finder 中右键应用并选择「打开」。正式签名并公证的版本配置方式见下文「签名与公证」。
+> 当前 `v0.1.0` Release 使用临时本地签名、尚未公证，首次打开时 macOS 可能要求在 Finder 中右键应用并选择「打开」。正式签名与公证见下文「签名与公证」。
 
-## 本地开发
+## 💻 本地开发
 
 需要 Node.js 20 或更高版本。
 
@@ -47,7 +105,7 @@ npm install
 npm run desktop
 ```
 
-点击左下角设置按钮可填写 `Base URL`、模型名和 `API Key`。API Key 经 Electron `safeStorage` 加密后保存在应用数据目录，macOS 下密钥由系统钥匙串保护；渲染页面只能获知“是否已配置”，不能读回密钥。
+点击左下角「设置」按钮可填写 `Base URL`、模型名与 `API Key`。API Key 经 Electron `safeStorage` 加密后保存在应用数据目录，macOS 下密钥由系统钥匙串保护；界面只能获知“是否已配置”，不能读回密钥。
 
 运行浏览器采集与产物测试：
 
@@ -55,78 +113,28 @@ npm run desktop
 npm run poc
 ```
 
-构建 Apple Silicon 应用（ad-hoc 临时签名，用于本机运行）：
+## ⚙️ 模型配置
 
-```bash
-npm run package:mac
-```
+在应用左下角「设置」中配置 OpenAI Chat Completions 格式接口：
 
-生成适合上传到 GitHub Release 的 ZIP：
+| 项 | 说明 |
+| --- | --- |
+| Base URL | 模型接口地址（OpenAI / DeepSeek / Kimi 等兼容接口均可） |
+| 模型名 | 模型 ID |
+| API Key | 密钥，经系统钥匙串加密保存，不写入项目与成果文件 |
 
-```bash
-npm run release:zip
-```
+配置后，Agent 会把已抽取的证据交给模型生成语义总结；未配置模型时，自动回退为原文证据摘要。
 
-## 签名与公证
+## 🛡️ 安全边界
 
-本地开发构建默认使用 ad-hoc 临时签名，仅用于本机运行。正式公开分发需要 Apple Developer ID 签名并通过公证，这样其他用户打开时不会触发 Gatekeeper 的“未验证开发者”提示。
-
-前提条件：
-
-1. 拥有 Apple Developer Program 账号，并在钥匙串中安装「Developer ID Application」证书。
-2. 在 [appleid.apple.com](https://appleid.apple.com) 生成一个 App 专用密码（用于公证）。
-3. 已知你的 Team ID（可在 Apple Developer 后台或钥匙串证书信息中查看）。
-
-设置环境变量后执行正式构建：
-
-```bash
-export APPLE_ID="你的 Apple ID 邮箱"
-export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
-export APPLE_TEAM_ID="你的 Team ID"
-
-npm run release:zip:signed
-```
-
-说明：
-
-- `package:mac:signed` 让 electron-builder 自动发现 Developer ID 证书，启用 Hardened Runtime 签名，并通过 `notarytool` 完成公证与票据装订。
-- 若钥匙串中有多张证书，可用 `CSC_NAME` 指定签名身份，例如 `export CSC_NAME="Developer ID Application: Your Name (TEAMID)"`。
-- 构建完成后运行 `npm run verify:mac` 校验签名身份、公证票据与 Gatekeeper 评估结果。
-
-生成物位于：
-
-```text
-release/mac-arm64/DeskResearch.app
-release/DeskResearch-0.1.0-mac-arm64.zip
-```
-
-构建结果位于：
-
-```text
-release/mac-arm64/DeskResearch.app
-release/DeskResearch-0.1.0-mac-arm64.zip
-```
-
-## 安全边界
-
-- 搜索候选公开页面，并且只访问用户在来源确认窗口中勾选的 URL。
+- 搜索候选公开页面，只访问用户在来源确认窗口中勾选的 URL。
 - 不读取浏览历史、现有登录状态或 Cookie。
 - 不自动提交表单、购买或发送消息。
 - 不控制 Pages、Numbers、Excel、Word 等原生应用。
 - 文件只保存在本地任务目录。
-- API Key 不写入项目、成果文件或渲染页面；仅在任务运行时传给本地子进程。
+- API Key 不写入项目、成果文件或渲染页面，仅在任务运行时传给本地子进程。
 
-## 项目结构
-
-```text
-desktop/        Electron 主进程、预加载脚本和界面
-src/            浏览器采集、证据分析和成果生成
-config/         官方来源配置
-build/          应用图标
-scripts/        发布打包脚本
-```
-
-## 常用命令
+## 🧰 常用命令
 
 | 命令 | 用途 |
 | --- | --- |
@@ -139,6 +147,32 @@ scripts/        发布打包脚本
 | `npm run release:zip:signed` | 生成已签名并公证的发布 ZIP |
 | `npm run verify:mac` | 校验签名身份、公证票据与 Gatekeeper |
 
-## 当前状态
+## ✍️ 签名与公证（进阶）
 
-版本 `0.1.0` 已在 Apple Silicon Mac 上完成安装版验证：4 个产品、9 个官方页面、失败来源 0。代码已发布到 GitHub，`v0.1.0` Release 附带当前 ad-hoc 签名的安装包；正式公开分发版本待配置 Developer ID 证书与公证后，由 `npm run release:zip:signed` 生成。
+本地构建默认使用 ad-hoc 临时签名，仅用于本机运行。正式公开分发需要 Apple Developer ID 签名并通过公证，这样其他用户打开时不会触发 Gatekeeper 的「未验证开发者」提示。
+
+前提条件：
+
+1. Apple Developer Program 账号，并在钥匙串中安装「Developer ID Application」证书。
+2. 在 [appleid.apple.com](https://appleid.apple.com) 生成 App 专用密码。
+3. 已知 Team ID。
+
+```bash
+export APPLE_ID="你的 Apple ID 邮箱"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+export APPLE_TEAM_ID="你的 Team ID"
+
+npm run release:zip:signed
+npm run verify:mac
+```
+
+生成物：
+
+```text
+release/mac-arm64/DeskResearch.app
+release/DeskResearch-0.1.0-mac-arm64.zip
+```
+
+## 📌 当前状态
+
+版本 `0.1.0` 已在 Apple Silicon Mac 上完成安装版验证：4 个产品、9 个官方页面、失败来源 0。代码已发布到 GitHub，`v0.1.0` Release 附带当前 ad-hoc 签名的安装包。
