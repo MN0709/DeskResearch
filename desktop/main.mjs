@@ -99,10 +99,10 @@ async function testLlmConfig() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 820,
-    minWidth: 1040,
-    minHeight: 700,
+    width: 980,
+    height: 720,
+    minWidth: 760,
+    minHeight: 640,
     titleBarStyle: "hiddenInset",
     backgroundColor: "#F4F4F0",
     show: !process.argv.includes("--smoke-test"),

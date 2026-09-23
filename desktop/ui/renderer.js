@@ -1,5 +1,8 @@
 const runButton = document.querySelector("#runTask");
-const newTaskButton = document.querySelector("#newTask");
+const backToHomeButton = document.querySelector("#backToHome");
+const homeView = document.querySelector("#homeView");
+const runView = document.querySelector("#runView");
+const workspace = document.querySelector(".workspace");
 const promptInput = document.querySelector("#taskPrompt");
 const modal = document.querySelector("#approvalModal");
 const confirmButton = document.querySelector("#confirmApproval");
@@ -11,7 +14,6 @@ const statusChip = document.querySelector("#taskStatus");
 const progressLabel = document.querySelector("#progressLabel");
 const liveLog = document.querySelector("#liveLog");
 const artifactsContainer = document.querySelector("#artifacts");
-const historyStatus = document.querySelector(".history-item small");
 const logPanel = document.querySelector(".log-panel");
 const quickActions = [...document.querySelectorAll("[data-prompt]")];
 const openSettingsButton = document.querySelector("#openSettings");
@@ -27,11 +29,23 @@ const modelStatus = document.querySelector("#modelStatus");
 const steps = Object.fromEntries([...document.querySelectorAll(".timeline-item")].map((item) => [item.dataset.step, item]));
 let discoveredSources = [];
 let discoveryAttempt = 0;
+let running = false;
+
+function showHome() {
+  runView.classList.add("hidden");
+  homeView.classList.remove("hidden");
+  promptInput.focus();
+}
+
+function showRun() {
+  homeView.classList.add("hidden");
+  runView.classList.remove("hidden");
+  workspace.scrollTop = 0;
+}
 
 function setStatus(text, state) {
   statusChip.textContent = text;
   statusChip.className = `status-chip ${state}`;
-  historyStatus.textContent = text;
 }
 
 function setStep(name, state) {
@@ -155,18 +169,23 @@ runButton.addEventListener("click", async () => {
     if (attempt === discoveryAttempt) renderDiscoveryError(error);
   }
 });
-newTaskButton.addEventListener("click", () => {
+
+backToHomeButton.addEventListener("click", () => {
+  if (running) return;
   resetTask();
   setStatus("准备就绪", "idle");
   progressLabel.textContent = "尚未开始";
-  promptInput.focus();
+  promptInput.value = "";
+  showHome();
 });
+
 for (const action of quickActions) {
   action.addEventListener("click", () => {
     promptInput.value = action.dataset.prompt;
     promptInput.focus();
   });
 }
+
 openSettingsButton.addEventListener("click", async () => {
   settingsModal.classList.remove("hidden");
   await loadModelConfig();
@@ -214,19 +233,24 @@ confirmButton.addEventListener("click", async () => {
   if (sources.length === 0) return;
   modal.classList.add("hidden");
   resetTask();
+  running = true;
   runButton.disabled = true;
+  backToHomeButton.disabled = true;
   setStatus("执行中", "running");
   progressLabel.textContent = "正在确认权限";
   setStep("approval", "done");
   setStep("browse", "active");
   logPanel.open = true;
+  showRun();
   appendLog(`已确认 ${sources.length} 个公开来源：${sources.map((source) => source.domain).join("、")}`);
   try {
     await window.officeAgent.startTask({ prompt: promptInput.value.trim(), sources });
   } catch (error) {
     setStatus("启动失败", "failed");
     appendLog(error.message);
+    running = false;
     runButton.disabled = false;
+    backToHomeButton.disabled = false;
   }
 });
 
@@ -259,7 +283,9 @@ window.officeAgent.onTaskEvent((event) => {
     appendLog("任务完成，成果已保存到本地");
     showArtifacts(event.artifacts);
     logPanel.open = false;
+    running = false;
     runButton.disabled = false;
+    backToHomeButton.disabled = false;
   }
   if (event.type === "task.failed") {
     setStep("browse", "failed");
@@ -267,7 +293,9 @@ window.officeAgent.onTaskEvent((event) => {
     setStatus("执行失败", "failed");
     progressLabel.textContent = event.message || "任务失败";
     appendLog(event.message || "任务失败");
+    running = false;
     runButton.disabled = false;
+    backToHomeButton.disabled = false;
   }
 });
 
